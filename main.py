@@ -6,28 +6,8 @@ from discord.ext import commands
 import hashlib
 from discord.ext.commands import Bot
 prefix = "%"
-
 bot = commands.Bot(command_prefix=prefix)
-TOKEN="REPLACEME"
-
-def readFileVar(varName):
-	if Path(var).is_file():
-		v=open(var,"r")
-		print(var);
-		v.close
-		return var;
-	else:
-		print("ERROR: "+var+" unset!");
-		return None;
-def writeFileVar(var, varcontent):
-	v=open(var,"w")
-	v.write(str(varcontent))
-	v.close
-	print(var)
-	return None;
-def titleToId(title):
-	ID=re.sub('[abcdefghijklmnopqrstuvwxyz]', '',str(hashlib.sha224(title.encode('utf-8')).hexdigest())).strip()
-	return ID;
+TOKEN=""
 @bot.event
 async def on_ready():
 	print('------')
@@ -62,19 +42,16 @@ async def on_command_error(error, ctx):
 	print(error)
 @bot.command(pass_context=True)
 async def quickpoll(ctx, votetitle, time):
-	if votetitle == "":
-		bot.say("You need to input a votetitle.")
-		return
-	if time == "":
-		bot.say("You need to input a time.")
-		return
+
+	print("vote began")
 	message=ctx.message.content
 	channel = ctx.message.channel
-	choices = {"🇦": "Approve",
-				"🇧": "Deny",
-				"🇨": "Abstain"}
+	choices = { 
+				"❎": "No",
+				"✅": "Yes",	
+				}
 
-	vote = discord.Embed(title="**[POLL]**", description=" ", color=0x00ff00)
+	vote = discord.Embed(title="**==[A POLL HAS STARTED]==**", description=str(ctx.message.author.name)+" has started a poll.\nLasts for "+time+" seconds.", color=0x00ffff)
 	value = "\n".join("- {} {}".format(*item) for item in choices.items()) 
 	vote.add_field(name=votetitle, value=value, inline=True)
 
@@ -86,11 +63,24 @@ async def quickpoll(ctx, votetitle, time):
 	await asyncio.sleep(int(time))
 	message_1 = await bot.get_message(channel, message_1.id)
 
-
+	
 	counts = {react.emoji: react.count for react in message_1.reactions}
+	totalReactions=-2
+	for react in message_1.reactions:
+		totalReactions=totalReactions+react.count
+	totalReactions=totalReactions
+	print(totalReactions)
 	winner = max(choices, key=counts.get)
-
-	await bot.send_message(channel, "Option '{}' has won!".format(choices[winner]))
+	members=len(ctx.message.server.members)
+	
+	if totalReactions > 0:
+		verdict=discord.Embed(title="**POLL ENDED**", description="Option '{}' has won!".format(choices[winner])+"\n\n"+"There were a total of "+str(totalReactions)+" votes out of "+format(members)+" persons.", color=0x00ff00)
+		await bot.send_message(channel, embed=verdict)
+	else:
+		verdict=discord.Embed(title="**POLL ENDED**", description="Insufficient amount of votes! \nThere were "+str(totalReactions)+".", color=0xff0000)
+		await bot.send_message(channel, embed=verdict)
+	await bot.delete_message(message_1)
+	print("vote ended"
 	#await ctx.message.clear_reactions
 def setup(bot):
     bot.add_cog(QuickPoll(bot))

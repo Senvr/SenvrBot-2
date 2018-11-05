@@ -5,9 +5,9 @@ from discord.utils import get
 from discord.ext import commands
 import hashlib
 from discord.ext.commands import Bot
-prefix = "%"
+prefix = "!"
 bot = commands.Bot(command_prefix=prefix)
-TOKEN=""
+TOKEN="NTA4MjA1MTQ5MTQ4MjgyODkx.DsEUoQ.bU0FAE03dEPrwK72BwJfCYSSoWY"
 @bot.event
 async def on_ready():
 	print('------')
@@ -41,8 +41,9 @@ async def on_command_error(error, ctx):
 	await bot.send_message(ctx.message.channel, "`"+str(error)+"`")
 	print(error)
 @bot.command(pass_context=True)
-async def quickpoll(ctx, votetitle, time):
-
+async def vote(ctx, votetitle, time, format):
+	await bot.delete_message(ctx.message)
+	print(ctx.message.content)
 	print("vote began")
 	message=ctx.message.content
 	channel = ctx.message.channel
@@ -50,17 +51,33 @@ async def quickpoll(ctx, votetitle, time):
 				"❎": "No",
 				"✅": "Yes",	
 				}
-
-	vote = discord.Embed(title="**==[A POLL HAS STARTED]==**", description=str(ctx.message.author.name)+" has started a poll.\nLasts for "+time+" seconds.", color=0x00ffff)
-	value = "\n".join("- {} {}".format(*item) for item in choices.items()) 
-	vote.add_field(name=votetitle, value=value, inline=True)
+	regex = re.compile('[^a-zA-Z0-9 ]')
+	format = regex.sub('', format.strip())
+	if format == "seconds":
+		time2=str(int(time))
+	elif format == "minutes":
+		time2=str(int(time)*60)
+	elif format == "hours":
+		time2=str(int(time)*3600)
+	elif format == "days":
+		time2=str(int(time)*86400)
+	else:
+		warningmsg = await bot.say("Your format doesn't work! \nYou used: **"+format+"**.\nWe take: \n seconds\n minutes\n hours\n days")
+		await asyncio.sleep(3)
+		await bot.delete_message(warningmsg)
+		return;
+	
+	vote = discord.Embed(title="**VOTE IN PROGRESS**", description="**"+str(ctx.message.author.name)+"** Has Created a Poll\nVoting Time Expires in "+time+" "+format, color=0x00ffff)
+	print(time2)
+	value = "\n".join(" {} \n{}".format(*item) for item in choices.items()) 
+	vote.add_field(name="**"+votetitle+"**", value=value, inline=True)
 
 	message_1 = await bot.send_message(channel, embed=vote)
 
 	for choice in choices:
 		await bot.add_reaction(message_1, choice)
 
-	await asyncio.sleep(int(time))
+	await asyncio.sleep(int(time2))
 	message_1 = await bot.get_message(channel, message_1.id)
 
 	
@@ -73,14 +90,19 @@ async def quickpoll(ctx, votetitle, time):
 	winner = max(choices, key=counts.get)
 	members=len(ctx.message.server.members)
 	
+	print(str(counts)[3:].strip())
 	if totalReactions > 0:
-		verdict=discord.Embed(title="**POLL ENDED**", description="Option '{}' has won!".format(choices[winner])+"\n\n"+"There were a total of "+str(totalReactions)+" votes out of "+format(members)+" persons.", color=0x00ff00)
-		await bot.send_message(channel, embed=verdict)
+		if winner == "✅":
+			verdict=discord.Embed(title="**"+votetitle+"** ENDED", description="The action was **approved**.\nThere were "+str(totalReactions)+" votes total.", color=0x00ff00)
+			await bot.send_message(discord.Object(id='508860940133859389'), embed=verdict)
+		else:
+			verdict=discord.Embed(title="**"+votetitle+"** ENDED", description="The action was **denied**.\nThere were "+str(totalReactions)+" votes total.", color=0xff0000)
+			await bot.send_message(discord.Object(id='508860940133859389'), embed=verdict)
 	else:
-		verdict=discord.Embed(title="**POLL ENDED**", description="Insufficient amount of votes! \nThere were "+str(totalReactions)+".", color=0xff0000)
-		await bot.send_message(channel, embed=verdict)
+		verdict=discord.Embed(title="**"+votetitle+" ENDED:**", description="Insufficient amount of votes! \nThere were "+str(totalReactions)+".", color=0x000000)
+		await bot.send_message(discord.Object(id='508860940133859389'), embed=verdict)
 	await bot.delete_message(message_1)
-	print("vote ended"
+	print("vote ended")
 	#await ctx.message.clear_reactions
 def setup(bot):
     bot.add_cog(QuickPoll(bot))

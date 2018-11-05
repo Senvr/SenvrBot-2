@@ -7,7 +7,7 @@ import hashlib
 from discord.ext.commands import Bot
 prefix = "!"
 bot = commands.Bot(command_prefix=prefix)
-TOKEN="NTA4MjA1MTQ5MTQ4MjgyODkx.DsEUoQ.bU0FAE03dEPrwK72BwJfCYSSoWY"
+TOKEN="I regenerated the token, don't worry ;)"
 @bot.event
 async def on_ready():
 	print('------')
